@@ -61,7 +61,6 @@ int main() {
     int righe = 0;
     Utente propsDaClassificare = setProps();
     Utente* propsDaClassificare_ptr = &propsDaClassificare;
-    //int.rate, installment, log.annual.inc, dti, fico, days.with.cr.line, revol.bal, revol.util.
 
     if (dataset_ptr == NULL) {
         perror("Errore nell'apertura del file");
@@ -71,7 +70,6 @@ int main() {
     for(int i = 0; dataset_ptr != NULL; i++){
         righe++;
         char* row = fgets(riga, ITEMS_ROW, dataset_ptr);
-        //printf("%d riga: %s\n", i, row);
         if (row != NULL) {
             if(i == 1){
                 continue;
@@ -81,10 +79,8 @@ int main() {
                 printf("Memoria allocata in modo errato");
                 exit(1);
             }
-            //printf("\n\n%d\n", i);
             fillUser(ptr_nUser, row);
             usersList[i] = ptr_nUser;
-            //printf("indirizzo ptr: %p\n", ptr_nUser);
         } else {
             if(feof(dataset_ptr)){
                 break;
@@ -93,18 +89,17 @@ int main() {
         }
         
     }
-
-    //devo calcolare la classifica per: int.rate, installment, log.annual.inc, dti, fico, days.with.cr.line, revol.bal, revol.util. Calcolando la distanza dal nuovo punto inserito
     calcDistanze(usersList, propsDaClassificare_ptr, newData, righe);
+    //mi manca da calcolare il punteggio
 
-    //faccio una prova e stampo solo le distanze di intRate
+    //prova di stampa delle prop
     for (int i = 0; i < 9000; i++){
         if(i < 3){
             continue;
         }
 
-        double intRate = usersList[i]->distanze_ptr->dti;
-        printf("intrate: %lf\n", intRate);
+        double propDistance = usersList[i]->distanze_ptr->daysWithCrLine;
+        printf("distanza: %lf\n", propDistance);
     }
 
     fclose(dataset_ptr);
@@ -121,7 +116,6 @@ void fillUser(Utente* _User, char* _UserProps){
             exit(1);
         }
         *((&_User->creditPolicy)+i*(sizeof(char))) = getUserProp(i, _UserProps, buffer);
-        //printf("\n\nINDIRIZZO e': %p\n", getUserProp(i, _UserProps, buffer));
     }
     _User->punteggio_ptr = (Punteggio*)malloc(sizeof(Punteggio));
     _User->distanze_ptr = (Distanze*)malloc(sizeof(Distanze));
@@ -151,7 +145,6 @@ Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _Ne
                     exit(1);
                 }
                 char* newDataPropValue = getUserProp(i, _NewData, buffer);
-                //puts(newDataPropValue);
                 char* endPtr1;
                 char* endPtr2;
                 Utente* currentUser_ptr = _UserList[j];
@@ -166,12 +159,13 @@ Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _Ne
                     distance = distance * (-1);
                 }
                 *((&currentUser_ptr->distanze_ptr->intRate)+yesCounter*(sizeof(char))) = distance;
-                //ho la distanza dalla prop del nuovo dato, il problema è che non so come mantenere questo valore e confrontarlo con gli altri
             }
             yesCounter++;
         }
     }
 }
+
+//int.rate, installment, log.annual.inc, dti, fico, days.with.cr.line, revol.bal, revol.util.
 Utente setProps(){
     Utente _PropsDaClassificare;
     _PropsDaClassificare.creditPolicy = "no";
@@ -208,8 +202,8 @@ char* getUserProp(int _CountUserProp, char* _UserProps, char* _Buf){
         }
         startIndexUserProp++;
     }
+    
     int n = startIndexUserProp;
-
     while(_UserProps[n] != ',' && n < strlen(_UserProps)){
         n++;
     }
@@ -221,12 +215,9 @@ char* getUserProp(int _CountUserProp, char* _UserProps, char* _Buf){
     for(int i = 0; i < lenghtUserProp; i++) {
         userProp[i] = _UserProps[startIndexUserProp + i];
     }
-    //printf("start index: %d, end index: %d, len given str: %d\n", startIndexUserProp, endIndexUserProp, lenghtUserProp);
-
     for(int i = 0; i < lenghtUserProp; i++){
         _Buf[i] = userProp[i];
     }
     _Buf[lenghtUserProp] = '\0';
-    //printf("buf: %s\n", _Buf);
     return _Buf;
 }
