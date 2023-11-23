@@ -50,7 +50,7 @@ typedef struct Utente {
 
 void fillUser(Utente*, char*);
 char* getUserProp(int _CountUserProp, char* _UserProps, char* _Buf);
-Utente* calcPunteggi(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe);
+Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe);
 Utente setProps();
 
 int main() {
@@ -95,17 +95,17 @@ int main() {
     }
 
     //devo calcolare la classifica per: int.rate, installment, log.annual.inc, dti, fico, days.with.cr.line, revol.bal, revol.util. Calcolando la distanza dal nuovo punto inserito
-    calcPunteggi(usersList, propsDaClassificare_ptr, newData, righe);
+    calcDistanze(usersList, propsDaClassificare_ptr, newData, righe);
 
     //faccio una prova e stampo solo le distanze di intRate
-    /*for (int i = 0; i < 1000; i++){
+    for (int i = 0; i < 9000; i++){
         if(i < 3){
             continue;
         }
 
         double intRate = usersList[i]->distanze_ptr->dti;
-        printf("intrate: %f\n", intRate);
-    }*/
+        printf("intrate: %lf\n", intRate);
+    }
 
     fclose(dataset_ptr);
     return 0;
@@ -131,7 +131,8 @@ void fillUser(Utente* _User, char* _UserProps){
     }
 }
 
-Utente* calcPunteggi(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe){
+Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe){
+    int yesCounter = 0;
     for(int i = 0; i < NUMB_USER_PROP; i++){
         char* buffer = (char*)malloc(100);
         if(buffer == NULL){
@@ -160,13 +161,14 @@ Utente* calcPunteggi(Utente** _UserList, Utente* _PropsDaClassificare, char* _Ne
                 double newDataPropValue_d = strtod(newDataPropValue, &endPtr2);
                 double distance = currentPropValue_d - newDataPropValue_d;
                 if(newDataPropValue_d > currentPropValue_d) distance = newDataPropValue_d - currentPropValue_d;
-                printf("distance: %lf, currentPropValue: %lf, newDataPropValue: %lf, i: %d, newDataPropValueString: %s\n\n", distance, currentPropValue_d, newDataPropValue_d, i, newDataPropValue);
+                //if(i == 6) printf("distance: %lf, currentPropValue: %lf, newDataPropValue: %lf, i: %d, newDataPropValueString: %s\n\n", distance, currentPropValue_d, newDataPropValue_d, i, newDataPropValue);
                 if(distance < 0){
                     distance = distance * (-1);
                 }
-                *((&currentUser_ptr->distanze_ptr->intRate)+i*(sizeof(char))) = distance;
+                *((&currentUser_ptr->distanze_ptr->intRate)+yesCounter*(sizeof(char))) = distance;
                 //ho la distanza dalla prop del nuovo dato, il problema è che non so come mantenere questo valore e confrontarlo con gli altri
             }
+            yesCounter++;
         }
     }
 }
