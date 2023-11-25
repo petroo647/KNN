@@ -6,6 +6,7 @@
 
 #define ITEMS_ROW 1000
 #define NUMB_USER_PROP 14
+#define NUMB_DISTANCES_PROP 8
 
 typedef struct Punteggio {
     int intRate;
@@ -48,10 +49,25 @@ typedef struct Utente {
     Distanze* distanze_ptr;
 } Utente;
 
+typedef Utente** Classifica;
+
+typedef struct Classifiche {
+    Classifica intRate;
+    Classifica installment;
+    Classifica logAnnualInc;
+    Classifica dti;
+    Classifica fico;
+    Classifica daysWithCrLine;
+    Classifica revolBal;
+    Classifica revolUtil;
+} Classifiche;
+
+void calcClassifiche(Utente** _UserList, int _SizeUserList, Classifiche* _CTotali);
 void fillUser(Utente*, char*);
 char* getUserProp(int _CountUserProp, char* _UserProps, char* _Buf);
 Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe);
 Utente setProps();
+void initClassifiche(Classifiche*, int _Size);
 
 int main() {
     FILE* dataset_ptr = fopen("dataset_knn.csv", "r");
@@ -61,6 +77,8 @@ int main() {
     int righe = 0;
     Utente propsDaClassificare = setProps();
     Utente* propsDaClassificare_ptr = &propsDaClassificare;
+    Classifiche cTotali;
+    Classifiche* cTotali_ptr = &cTotali;
 
     if (dataset_ptr == NULL) {
         perror("Errore nell'apertura del file");
@@ -91,22 +109,92 @@ int main() {
     }
     calcDistanze(usersList, propsDaClassificare_ptr, newData, righe);
     //mi manca da calcolare il punteggio
+    calcClassifiche(usersList, righe-100, cTotali_ptr);
+
+
+    // provo a stampare un po di valori delle classifiche
+    //printf("%p", cTotali_ptr->intRate[10][10]);
+
 
     //prova di stampa delle prop
-    for (int i = 0; i < 9000; i++){
+    /*for (int i = 0; i < 9000; i++){
         if(i < 3){
             continue;
         }
 
-        double propDistance = usersList[i]->distanze_ptr->daysWithCrLine;
+        double propDistance = usersList[i]->distanze_ptr->dti;
         printf("distanza: %lf\n", propDistance);
-    }
+    }*/
 
     fclose(dataset_ptr);
     return 0;
 }
+/*void initClassifiche(Classifiche* _Classifiche, int _Size){
+    for(int i = 0; i < _Size; i++){
+        Classifica* currentClassifica_ptr = (&_Classifiche->intRate)+i*sizeof(Classifica);
+    }
+}*/
 
 //*((&_User->creditPolicy)+i*(sizeof(char))) //mi consente di iterare le proprietà di una struttura essendo tutte char
+void calcClassifiche(Utente** _UserList, int _SizeUserList, Classifiche* _CTotali){
+    for(int i = 0; i < NUMB_DISTANCES_PROP; i++){
+        Classifica* currentClassifica_ptr = (Classifica*)malloc(sizeof(Classifica));
+        currentClassifica_ptr = (&_CTotali->intRate)+i*(sizeof(Classifica));
+
+        (*currentClassifica_ptr) = (Utente**)malloc((_SizeUserList - 2) * sizeof(Utente*));
+        if ((*currentClassifica_ptr) == NULL) {
+            printf("Memoria allocata in modo errato");
+            exit(1);
+        }
+
+        for (int j = 2; j < _SizeUserList; j++) {
+            (*currentClassifica_ptr)[j - 2] = (Utente*)malloc(sizeof(Utente));
+            if ((*currentClassifica_ptr)[j - 2] == NULL) {
+                printf("Memoria allocata in modo errato");
+                exit(1);
+            }
+        }
+        //adesso la classifica la riempio e basta, poi la ordino dal piu piccolo al piu grande
+        
+        for(int j = 2; j < _SizeUserList; j++){
+            Utente* currentUser = _UserList[j];
+            (*currentClassifica_ptr)[j-2] = currentUser;
+            //printf("%p %d\n", (*currentClassifica_ptr)[j-2], i);
+        }
+
+        //ora ordino le singole classifiche
+        for(int n = 2; n < _SizeUserList-100; n++){
+            for(int j = 2; j < _SizeUserList-100; j++){
+                Utente* currentUser1 = (*currentClassifica_ptr)[j - 2];
+                double currentUserDistance1 = *((&currentUser1->distanze_ptr->intRate)+i*(sizeof(double)));
+                Utente* currentUser2 = (*currentClassifica_ptr)[j - 1];
+                double currentUserDistance2 = *((&currentUser2->distanze_ptr->intRate)+i*(sizeof(double)));
+
+                if(currentUserDistance1 > currentUserDistance2){
+                    Utente* tmp = (*currentClassifica_ptr)[j - 2];
+                    (*currentClassifica_ptr)[j - 2] = (*currentClassifica_ptr)[j - 1];
+                    (*currentClassifica_ptr)[j - 1] = tmp;
+                }
+            }
+        }
+    }
+    for (int n = 2; n < _SizeUserList-100; n++){
+        printf("%s\n", _CTotali->intRate[n]->intRate);
+    }
+}
+
+/*
+typedef struct Classifiche_totali {
+    Utente** intRate;
+    Utente** installment;
+    Utente** logAnnualInc;
+    Utente** dti;
+    Utente** fico;
+    Utente** daysWithCrLine;
+    Utente** revolBal;
+    Utente** revolUtil;
+} Classifiche_totali;
+*/
 
 void fillUser(Utente* _User, char* _UserProps){
     for(int i = 0; i < NUMB_USER_PROP; i++){
@@ -127,14 +215,10 @@ void fillUser(Utente* _User, char* _UserProps){
 
 Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _NewData, int _Righe){
     int yesCounter = 0;
-    for(int i = 0; i < NUMB_USER_PROP; i++){
-        char* buffer = (char*)malloc(100);
-        if(buffer == NULL){
-            printf("Memoria allocata in modo errato");
-            exit(1);
-        }   
+    for(int i = 0; i < NUMB_USER_PROP; i++){  
         char* propValue = *((&_PropsDaClassificare->creditPolicy)+i*(sizeof(char))); //to know se devo compararla
-        if(propValue == "si"){
+        char si[] = "si";
+        if(strcmp(propValue, si) == 0){
             for(int j = 0; j < _Righe - 100; j++){
                 if(j < 2){
                     continue;
@@ -154,7 +238,7 @@ Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _Ne
                 double newDataPropValue_d = strtod(newDataPropValue, &endPtr2);
                 double distance = currentPropValue_d - newDataPropValue_d;
                 if(newDataPropValue_d > currentPropValue_d) distance = newDataPropValue_d - currentPropValue_d;
-                //if(i == 6) printf("distance: %lf, currentPropValue: %lf, newDataPropValue: %lf, i: %d, newDataPropValueString: %s\n\n", distance, currentPropValue_d, newDataPropValue_d, i, newDataPropValue);
+
                 if(distance < 0){
                     distance = distance * (-1);
                 }
@@ -165,7 +249,6 @@ Utente* calcDistanze(Utente** _UserList, Utente* _PropsDaClassificare, char* _Ne
     }
 }
 
-//int.rate, installment, log.annual.inc, dti, fico, days.with.cr.line, revol.bal, revol.util.
 Utente setProps(){
     Utente _PropsDaClassificare;
     _PropsDaClassificare.creditPolicy = "no";
