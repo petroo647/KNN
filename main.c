@@ -108,23 +108,17 @@ int main() {
         
     }
     calcDistanze(usersList, propsDaClassificare_ptr, newData, righe);
-    //mi manca da calcolare il punteggio
-    calcClassifiche(usersList, righe-100, cTotali_ptr);
-
-
-    // provo a stampare un po di valori delle classifiche
-    //printf("%p", cTotali_ptr->intRate[10][10]);
-
+    //calcClassifiche(usersList, righe-100, cTotali_ptr);
 
     //prova di stampa delle prop
-    /*for (int i = 0; i < 9000; i++){
+    for (int i = 0; i < 9000; i++){
         if(i < 3){
             continue;
         }
 
-        double propDistance = usersList[i]->distanze_ptr->dti;
-        printf("distanza: %lf\n", propDistance);
-    }*/
+        double propDistance = usersList[i]->distanze_ptr->logAnnualInc;
+        printf("distanza: %lf // %d\n", propDistance, i);
+    }
 
     fclose(dataset_ptr);
     return 0;
@@ -141,44 +135,44 @@ void calcClassifiche(Utente** _UserList, int _SizeUserList, Classifiche* _CTotal
         Classifica* currentClassifica_ptr = (Classifica*)malloc(sizeof(Classifica));
         currentClassifica_ptr = (&_CTotali->intRate)+i*(sizeof(Classifica));
 
-        (*currentClassifica_ptr) = (Utente**)malloc((_SizeUserList - 2) * sizeof(Utente*));
+        (*currentClassifica_ptr) = (Utente**)malloc((_SizeUserList) * sizeof(Utente*));
         if ((*currentClassifica_ptr) == NULL) {
             printf("Memoria allocata in modo errato");
             exit(1);
         }
 
-        for (int j = 2; j < _SizeUserList; j++) {
-            (*currentClassifica_ptr)[j - 2] = (Utente*)malloc(sizeof(Utente));
-            if ((*currentClassifica_ptr)[j - 2] == NULL) {
+        for (int j = 0; j < _SizeUserList; j++) {
+            (*currentClassifica_ptr)[j] = (Utente*)malloc(sizeof(Utente));
+            if ((*currentClassifica_ptr)[j] == NULL) {
                 printf("Memoria allocata in modo errato");
                 exit(1);
             }
         }
         //adesso la classifica la riempio e basta, poi la ordino dal piu piccolo al piu grande
         
-        for(int j = 2; j < _SizeUserList; j++){
+        for(int j = 0; j < _SizeUserList; j++){
             Utente* currentUser = _UserList[j];
-            (*currentClassifica_ptr)[j-2] = currentUser;
+            (*currentClassifica_ptr)[j] = currentUser;
             //printf("%p %d\n", (*currentClassifica_ptr)[j-2], i);
         }
-
+        /*
         //ora ordino le singole classifiche
-        for(int n = 2; n < _SizeUserList-100; n++){
-            for(int j = 2; j < _SizeUserList-100; j++){
-                Utente* currentUser1 = (*currentClassifica_ptr)[j - 2];
+        for(int n = 0; n < _SizeUserList; n++){
+            for(int j = 0; j < _SizeUserList; j++){
+                Utente* currentUser1 = (*currentClassifica_ptr)[j];
                 double currentUserDistance1 = *((&currentUser1->distanze_ptr->intRate)+i*(sizeof(double)));
-                Utente* currentUser2 = (*currentClassifica_ptr)[j - 1];
+                Utente* currentUser2 = (*currentClassifica_ptr)[j+1];
                 double currentUserDistance2 = *((&currentUser2->distanze_ptr->intRate)+i*(sizeof(double)));
 
-                if(currentUserDistance1 > currentUserDistance2){
-                    Utente* tmp = (*currentClassifica_ptr)[j - 2];
-                    (*currentClassifica_ptr)[j - 2] = (*currentClassifica_ptr)[j - 1];
-                    (*currentClassifica_ptr)[j - 1] = tmp;
+                if(currentUserDistance1 < currentUserDistance2){
+                    Utente* tmp = (*currentClassifica_ptr)[j];
+                    (*currentClassifica_ptr)[j] = (*currentClassifica_ptr)[j+1];
+                    (*currentClassifica_ptr)[j+1] = tmp;
                 }
             }
-        }
+        }*/
     }
-    for (int n = 2; n < _SizeUserList-100; n++){
+    for (int n = 0; n < _SizeUserList; n++){
         printf("%s\n", _CTotali->intRate[n]->intRate);
     }
 }
